@@ -35,21 +35,23 @@ def setup_platform(hass, config, add_devices, discovery_info=None):
     try:
         lock = threading.Lock()
         for name, device_cfg in config[CONF_DEVICES].items():
-            homegear = ServerProxy(config[CONF_ADDRESS])
+            address = config[CONF_ADDRESS]
+            homegear = ServerProxy(address)
             # get device description to detect the type
             device_type = homegear.getDeviceDescription(
                 device_cfg[CONF_ID] + ':-1')['TYPE']
+            
 
             if device_type in ['HM-CC-RT-DN', 'HM-CC-RT-DN-BoM']:
-                devices.append(HomematicThermostat(homegear,
+                devices.append(HomematicThermostat(address,
                                                    device_cfg[CONF_ID],
                                                    name, 4, lock))
             elif device_type in ['BC-RT-TRX-CyG', 'BC-RT-TRX-CyG-2']:
-                devices.append(HomematicThermostat(homegear,
+                devices.append(HomematicThermostat(address,
                                                    device_cfg[CONF_ID],
                                                    name, 1, lock))
             elif device_type == 'HM-TC-IT-WM-W-EU':
-                devices.append(HomematicThermostat(homegear,
+                devices.append(HomematicThermostat(address,
                                                    device_cfg[CONF_ID],
                                                    name, 2, lock))
             else:
@@ -69,9 +71,9 @@ def setup_platform(hass, config, add_devices, discovery_info=None):
 class HomematicThermostat(ThermostatDevice):
     """Representation of a Homematic thermostat."""
 
-    def __init__(self, device, _id, name, channel, lock):
+    def __init__(self, address, _id, name, channel, lock):
         """Initialize the thermostat."""
-        self.device = device
+        self.address = address
         self._id = _id
         self._channel = channel
         self._name = name
@@ -119,7 +121,8 @@ class HomematicThermostat(ThermostatDevice):
 
     def set_temperature(self, temperature):
         """Set new target temperature."""
-        self.device.setValue(self._full_device_name,
+        device = ServerProxy(self.address)
+        device.setValue(self._full_device_name,
                              PROPERTY_SET_TEMPERATURE,
                              temperature)
 
@@ -148,22 +151,23 @@ class HomematicThermostat(ThermostatDevice):
 #        _LOGGER.info("HOMEMATIC UPDATE!")
         
         try:
-            self._current_temperature = self.device.getValue(
+            device = ServerProxy(self.address)
+            self._current_temperature = device.getValue(
                 self._full_device_name,
                 PROPERTY_ACTUAL_TEMPERATURE)
-            self._target_temperature = self.device.getValue(
+            self._target_temperature = device.getValue(
                 self._full_device_name,
                 PROPERTY_SET_TEMPERATURE)
 
 #            _LOGGER.info("Found temp: " + str(self._target_temperature))
 
-            self._valve = self.device.getValue(self._full_device_name,
+            self._valve = device.getValue(self._full_device_name,
                                                PROPERTY_VALVE_STATE)
             if (self._channel!=1):
-                self._battery = self.device.getValue(self._full_device_name,
+                self._battery = device.getValue(self._full_device_name,
                                                      PROPERTY_BATTERY_STATE)
 
-            self._mode = self.device.getValue(self._full_device_name,
+            self._mode = device.getValue(self._full_device_name,
                                               PROPERTY_CONTROL_MODE)
         except:
             _LOGGER.exception("Did not receive any temperature data from the "
