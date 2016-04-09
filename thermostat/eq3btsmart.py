@@ -15,7 +15,7 @@ from bluepy import btle
 import binascii
 from datetime import datetime
 
-REQUIREMENTS = []
+REQUIREMENTS = ['bluepy>=1.0.0']
 
 CONF_MAC = 'mac'
 CONF_DEVICES = 'devices'

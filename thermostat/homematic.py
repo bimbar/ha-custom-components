@@ -33,7 +33,6 @@ def setup_platform(hass, config, add_devices, discovery_info=None):
     """Setup the Homematic thermostat."""
     devices = []
     try:
-        lock = threading.Lock()
         for name, device_cfg in config[CONF_DEVICES].items():
             address = config[CONF_ADDRESS]
             homegear = ServerProxy(address)
@@ -45,15 +44,15 @@ def setup_platform(hass, config, add_devices, discovery_info=None):
             if device_type in ['HM-CC-RT-DN', 'HM-CC-RT-DN-BoM']:
                 devices.append(HomematicThermostat(address,
                                                    device_cfg[CONF_ID],
-                                                   name, 4, lock))
+                                                   name, 4))
             elif device_type in ['BC-RT-TRX-CyG', 'BC-RT-TRX-CyG-2']:
                 devices.append(HomematicThermostat(address,
                                                    device_cfg[CONF_ID],
-                                                   name, 1, lock))
+                                                   name, 1))
             elif device_type == 'HM-TC-IT-WM-W-EU':
                 devices.append(HomematicThermostat(address,
                                                    device_cfg[CONF_ID],
-                                                   name, 2, lock))
+                                                   name, 2))
             else:
                 raise ValueError(
                     "Device Type '{}' currently not supported".format(
@@ -71,7 +70,7 @@ def setup_platform(hass, config, add_devices, discovery_info=None):
 class HomematicThermostat(ThermostatDevice):
     """Representation of a Homematic thermostat."""
 
-    def __init__(self, address, _id, name, channel, lock):
+    def __init__(self, address, _id, name, channel):
         """Initialize the thermostat."""
         self.address = address
         self._id = _id
@@ -84,7 +83,6 @@ class HomematicThermostat(ThermostatDevice):
         self._valve = None
         self._battery = None
         self._mode = None
-        self._lock = lock
         self.update()
 
     @property
@@ -113,11 +111,6 @@ class HomematicThermostat(ThermostatDevice):
         """Return the temperature we try to reach."""
         return self._target_temperature
 
-    def _acquire_lock(self):
-        self._lock.acquire(True, 5)
-    
-    def _release_lock(self):
-        self._lock.release()
 
     def set_temperature(self, temperature):
         """Set new target temperature."""
@@ -148,8 +141,6 @@ class HomematicThermostat(ThermostatDevice):
     def update(self):
         """Update the data from the thermostat."""
         
-#        _LOGGER.info("HOMEMATIC UPDATE!")
-        
         try:
             device = ServerProxy(self.address)
             self._current_temperature = device.getValue(
@@ -159,10 +150,9 @@ class HomematicThermostat(ThermostatDevice):
                 self._full_device_name,
                 PROPERTY_SET_TEMPERATURE)
 
-#            _LOGGER.info("Found temp: " + str(self._target_temperature))
-
             self._valve = device.getValue(self._full_device_name,
                                                PROPERTY_VALVE_STATE)
+            # eq3 MAX! don't report battery percentage
             if (self._channel!=1):
                 self._battery = device.getValue(self._full_device_name,
                                                      PROPERTY_BATTERY_STATE)

@@ -16,7 +16,7 @@ from maxcube.device import *
 from maxcube.thermostat import *
 
 
-REQUIREMENTS = []
+REQUIREMENTS = ['python-maxcube-api']
 
 CONF_IP = 'ip'
 CONF_PORT = 'port'
