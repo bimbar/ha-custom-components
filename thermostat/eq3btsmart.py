@@ -56,6 +56,7 @@ class eq3BTSmartThermostat(ThermostatDevice, btle.DefaultDelegate):
         self._name = _name
         self._target_temperature = -1
         self._mode = -1
+        self._mode_readable = ''
         self._requestValue = -1
         self._requestHandle = -1
         
@@ -116,7 +117,7 @@ class eq3BTSmartThermostat(ThermostatDevice, btle.DefaultDelegate):
     @property
     def device_state_attributes(self):
         """Return the device specific state attributes."""
-        return {"mode": self._mode}
+        return {"mode": self._mode, "mode_readable": self._mode_readable}
 
     @property
     def min_temp(self):
@@ -150,7 +151,8 @@ class eq3BTSmartThermostat(ThermostatDevice, btle.DefaultDelegate):
     def handleNotification(self, cHandle, data):
         if (cHandle == PROPERTY_NTFY_HANDLE):
             if (self._requestValue == PROPERTY_GETINFO_VALUE):
-                self._mode=self.decodeMode(data[2])
+                self._mode=data[2] & 1
+                self._mode_readable=self.decodeMode(data[2])
                 self._target_temperature=data[5]/2.0
 
     
