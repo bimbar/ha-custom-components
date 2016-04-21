@@ -3,6 +3,13 @@ Support for Max!Cube thermostats.
 
 For more details about this platform, please refer to the documentation at
 https://home-assistant.io/components/thermostat.max/
+
+configuration.yaml
+
+thermostat:
+  platform: max
+  ip: <IP of MaxCube>
+  port: <Port of MaxCube - default is 62910>
 """
 import logging
 
