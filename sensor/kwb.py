@@ -25,6 +25,7 @@ DEFAULT_TYPE = 'tcp'
 MODE_SERIAL = 0
 MODE_TCP = 1
 
+CONF_TYPE = "type"
 
 SERIAL_SCHEMA = {
     vol.Required(CONF_PORT): cv.string,
@@ -42,41 +43,45 @@ def setup_platform(hass, config, add_devices, discovery_info=None):
     """Setup the KWB component."""
     host = config.get(CONF_HOST)
     port = config.get(CONF_PORT)
-    type = config.get(CONF_type)
+    type = config.get(CONF_TYPE)
 
-    from pykwb import KWBEasyfire
+    from pykwb import kwb
+
+    _LOGGER.info('KWB: initializing')
     
     if (type == 'serial'):
-        kwb = KWBEasyfire(MODE_SERIAL, "", 0, port)
+        easyfire = kwb.KWBEasyfire(MODE_SERIAL, "", 0, port)
     elif (type == 'tcp'):
-        kwb = KWBEasyfire(MODE_TCP, host, port)
+        easyfire = kwb.KWBEasyfire(MODE_TCP, host, port)
     else:
         return False
     
-    for sensor in kwb.get_sensors():
-        add_devices(KWBSensor(kwb, sensor))
+    sensors=[]
+    for sensor in easyfire.get_sensors():
+        sensors.append(KWBSensor(easyfire, sensor))
+    
+    add_devices(sensors)
+
+    _LOGGER.info('KWB: starting thread')
+    easyfire.run_thread()
+    _LOGGER.info('KWB: thread started')
 
 
 class KWBSensor(Entity):
     """Representation of a KWB Easyfire sensor."""
 
-    def __init__(self, kwb, sensor):
+    def __init__(self, easyfire, sensor):
         """Initialize the KWB sensor."""
         
-        from pykwb import KWBEasyfireSensor
-        
-        self._kwb = kwb
+        self._easyfire = easyfire
         self._sensor = sensor
+        self._client_name = "KWB"
+        self._name = self._sensor.name
 
     @property
     def name(self):
         """Return the name."""
-        return self._sensor.name
-
-    @property
-    def should_poll(self):  # pylint: disable=no-self-use
-        """No polling needed."""
-        return False
+        return '{} {}'.format(self._client_name, self._name)
 
     # pylint: disable=no-member
     @property
